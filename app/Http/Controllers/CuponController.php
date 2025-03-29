@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Cupon;
-use App\Models\Oferta;
-use Illuminate\Support\Str;
+use App\Models\Cupones;
+use App\Models\Ofertas;
 use Carbon\Carbon;
+use App\Mail\EmailCompra;
+use App\Models\Usuario;
+use Illuminate\Support\Facades\Mail;
 
 class CuponController extends Controller
 {
@@ -14,37 +16,70 @@ class CuponController extends Controller
     public function comprarCupon(Request $request)
     {
         $request->validate([
-            'id_oferta' => 'required|exists:ofertas,id_oferta',
-            'id_usuario' => 'required|exists:users,id'
+            'oferta_id' => 'required|exists:ofertas,id',
+            'cliente_id' => 'required|exists:usuarios,id'
         ]);
+        try {
+            $oferta = Ofertas::find($request->oferta_id);
+            $cliente = Usuario::find($request->cliente_id);
 
-        $oferta = Oferta::where('id_oferta', $request->id_oferta)
-                        ->where('fecha_inicio', '<=', Carbon::now())
-                        ->where('fecha_fin', '>=', Carbon::now())
-                        ->where('estado', 'Oferta aprobada')
-                        ->first();
+            // Verificando que la oferta esté disponible
+            if (
+                !$oferta ||
+                $oferta->fecha_inicio > Carbon::now() ||
+                $oferta->fecha_fin < Carbon::now() ||
+                $oferta->estado != 'Oferta aprobada' ||
+                $oferta->cantidad_limite_cupones <= 0
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La oferta no está disponible o no hay cupones.'
+                ], 400);
+            }
+            //generando codigo del cupon
+            $codigoEmpresa = $oferta->empresa->codigo;
+            $Numeros = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+            $codigoCupon = strtoupper($codigoEmpresa) . $Numeros;
 
-        if (!$oferta) {
-            return response()->json(['success' => false, 'message' => 'La oferta no está disponible.'], 400);
+            $cupon = Cupones::create([
+                'oferta_id' => $request->oferta_id,
+                'cliente_id' => $request->cliente_id,
+                'codigo' => $codigoCupon,
+                'monto' => $oferta->precio_oferta,
+                'fecha_compra' => Carbon::now(),
+            ]);
+            // Actualizando el stock de la oferta
+            $oferta->cantidad_limite_cupones -= 1;
+
+            $oferta->save();
+
+            // Enviando el correo de confirmación
+            Mail::to($cliente->email)->send(new EmailCompra($cupon));
+
+            return response()->json([
+                'success' => true,
+                'data' => $cupon,
+                'message' => 'Compra exitosa. Revisa tu correo.'
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar la compra: ' . $e->getMessage()
+            ], 500);
         }
-
-        $cupon = Cupon::create([
-            'codigo' => Str::uuid(),
-            'id_oferta' => $request->id_oferta,
-            'id_usuario' => $request->id_usuario,
-            'fecha_compra' => Carbon::now(),
-        ]);
-
-        return response()->json(['success' => true, 'data' => $cupon], 201);
     }
 
-    // Listar cupones comprados por un usuario
-    public function listarCupones($id_usuario)
+    // Listando cupones comprados por un usuario
+    public function listarCupones(Request $request)
     {
-        $cupones = Cupon::where('id_usuario', $id_usuario)
-                        ->with('oferta')
-                        ->orderBy('fecha_compra', 'desc')
-                        ->get();
+        $request->validate([
+            'cliente_id' => 'required|exists:usuarios,id'
+        ]);
+        $id_cliente = $request->cliente_id;
+        $cupones = Cupones::where('cliente_id', $id_cliente)
+            ->with('oferta')
+            ->orderBy('fecha_compra', 'desc')
+            ->get();
 
         return response()->json(['success' => true, 'data' => $cupones]);
     }
