@@ -1,0 +1,124 @@
+-- Crear la base de datos
+CREATE DATABASE LaCuponera;
+USE LaCuponera;
+
+-- Tabla: Rubros
+CREATE TABLE Rubros (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: Usuarios
+CREATE TABLE Usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    DUI VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    tipo ENUM('Administrador', 'Empresa', 'Cliente', 'Empleado') NOT NULL,
+    token_verificacion VARCHAR(255),
+    verificado BOOLEAN DEFAULT FALSE,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: Empresas
+CREATE TABLE Empresas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    codigo VARCHAR(6) NOT NULL UNIQUE, -- Formato: 3 letras y 3 dígitos
+    direccion VARCHAR(255) NOT NULL,
+    nombre_contacto VARCHAR(100) NOT NULL,
+    telefono VARCHAR(15) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    rubro_id INT NOT NULL,
+    porcentaje_comision DECIMAL(5, 2) NOT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (rubro_id) REFERENCES Rubros(id) ON DELETE CASCADE
+);
+
+-- Tabla: Ofertas
+CREATE TABLE Ofertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empresa_id INT NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    precio_regular DECIMAL(10, 2) NOT NULL,
+    precio_oferta DECIMAL(10, 2) NOT NULL,
+    fecha_inicio DATETIME NOT NULL,
+    fecha_fin DATETIME NOT NULL,
+    fecha_limite_cupon DATETIME NOT NULL,
+    cantidad_limite_cupones INT, -- Puede ser NULL
+    descripcion TEXT NOT NULL,
+    otros_detalles TEXT,
+    estado ENUM('En espera de aprobación', 'Oferta aprobada', 'Oferta rechazada', 'Oferta descartada') DEFAULT 'En espera de aprobación',
+    justificacion_rechazo TEXT,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (empresa_id) REFERENCES Empresas(id) ON DELETE CASCADE
+);
+
+-- Tabla: Cupones
+CREATE TABLE Cupones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    oferta_id INT NOT NULL,
+    cliente_id INT NOT NULL,
+    codigo VARCHAR(20) NOT NULL UNIQUE, -- Código único generado
+    monto DECIMAL(10, 2) NOT NULL,
+    estado ENUM('Disponible', 'Canjeado', 'Vencido') DEFAULT 'Disponible',
+    fecha_compra DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_canje DATETIME,
+    FOREIGN KEY (oferta_id) REFERENCES Ofertas(id) ON DELETE CASCADE,
+    FOREIGN KEY (cliente_id) REFERENCES Usuarios(id) ON DELETE CASCADE
+);
+
+-- Tabla: Empleados
+CREATE TABLE Empleados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empresa_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (empresa_id) REFERENCES Empresas(id) ON DELETE CASCADE
+);
+
+--rubros
+Insert into rubros values('Alimenticio', '2025-03-31')
+Insert into rubros values('Tecnología', '2025-03-31')
+Insert into rubros values('Calzado', '2025-03-31')
+
+--ofertas
+insert into ofertas values(1,'25% descuento en pizza hut', 'Cupon de descuento para pizza', 30.0, 22.5, '2025-03-31', '2025-04-01', '2025-04-02', 20, 'Descuento para una pizza familiar', 'Oferta aprobada', '2025-03-31')
+
+--empresas
+insert into empresas values('Pizza hut', 'PH001', 'San Salvador', 'Daniel Cortéz', '78256931', 'daniel@gmail.com', 1, 0.25, '2025-03-31')
+
+--empleados
+insert into empleados values(1, 'Juan', 'Pérez', 'Juan@gmail.com', 123, '2025-03-31')
+
+------------------------------------ procedimiento para actualizar los cupones cada día
+
+DELIMITER //
+
+CREATE PROCEDURE actualizar_estado_vencidos()
+BEGIN
+    UPDATE Cupones c
+    JOIN Ofertas o ON c.oferta_id = o.id
+    SET c.estado = 'Vencido'
+    WHERE c.estado = 'Disponible' 
+    AND o.fecha_limite_cupon < NOW()
+    AND c.fecha_canje IS NULL;
+    
+    SELECT CONCAT(ROW_COUNT(), ' cupones actualizados a estado "Vencido"') AS Resultado;
+END //
+
+DELIMITER ;
+
+--------------------------------------- eventos para que se ejecute el solo
+
+CREATE EVENT actualizar_cupones_diario
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+CALL actualizar_estado_vencidos();
