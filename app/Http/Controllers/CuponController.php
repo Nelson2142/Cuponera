@@ -36,6 +36,7 @@ class CuponController extends Controller
                     'message' => 'La oferta no está disponible o no hay cupones.'
                 ], 400);
             }
+
             //generando codigo del cupon
             $codigoEmpresa = $oferta->empresa->codigo;
             $Numeros = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
@@ -54,7 +55,7 @@ class CuponController extends Controller
             $oferta->save();
 
             // Enviando el correo de confirmación
-            Mail::to($cliente->email)->send(new EmailCompra($cupon));
+            Mail::to($cliente->email)->send(new EmailCompra($cupon, $cliente, $oferta));
 
             return response()->json([
                 'success' => true,

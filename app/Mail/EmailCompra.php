@@ -17,7 +17,8 @@ class EmailCompra extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public Cupones $cupon)
+    public function __construct(public Cupones $cupon, public $cliente, public $oferta)
+   
     {
         //
     }
