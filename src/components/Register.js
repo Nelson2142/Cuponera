@@ -81,6 +81,7 @@ const Register = () => {
                             >
                                 <option value="">Seleccione el tipo de usuario</option>
                                 <option value="user">Usuario</option>
+                                <option value="user"></option>
                             </select>
                         </div>
                         
