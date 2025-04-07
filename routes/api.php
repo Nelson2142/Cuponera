@@ -17,6 +17,7 @@ Route::get('/test', function () {
 
 Route::post('/comprar_cupon', [CuponController::class, 'comprarCupon']);
 Route::post('/listar_cupones', [CuponController::class, 'listarCupones']);
+Route::post('/filtrar_cupones', [CuponController::class, 'filtrar_cupones']);
 
 
 //endpoints para obtener ofertas

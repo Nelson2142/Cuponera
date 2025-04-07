@@ -23,6 +23,13 @@ class CuponController extends Controller
             $oferta = Ofertas::find($request->oferta_id);
             $cliente = Usuario::find($request->cliente_id);
 
+            //verificando si el usuario esta verificado
+            if ($cliente->verificado === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El usuario no esta verificado'
+                ], 400);
+            }
             // Verificando que la oferta esté disponible
             if (
                 !$oferta ||
@@ -78,6 +85,22 @@ class CuponController extends Controller
         ]);
         $id_cliente = $request->cliente_id;
         $cupones = Cupones::where('cliente_id', $id_cliente)
+            ->with('oferta')
+            ->orderBy('fecha_compra', 'desc')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $cupones]);
+    }
+
+    public function filtrar_cupones(Request $request)
+    {
+        $request->validate([
+            'cliente_id' => 'required|exists:usuarios,id',
+            'estado' => 'required'
+        ]);
+        $id_cliente = $request->cliente_id;
+        $estado = $request->estado;
+        $cupones = Cupones::where('cliente_id', $id_cliente)->where('estado', $estado)
             ->with('oferta')
             ->orderBy('fecha_compra', 'desc')
             ->get();
