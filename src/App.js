@@ -1,21 +1,28 @@
-import logo from './logo.svg';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import { useState } from 'react';
-import useLogin from './hooks/useLogin';
 import Home from './components/Home';
+import Login from './components/Login';
+import PageNotFound from './components/PageNotFound';
+import Register from './components/Register';
+import EmailPassword from './components/EmailPassword';
+import ChangePassword from './components/ChangePassword';
 
 function App() {
 
-  const { user, isVerified, login, logout } = useLogin(); // Hook para el login
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   return (
-    <>
-      {
-        <Home logout={logout} user={user} isVerified={isVerified} login={login} />
-      }
-    </>
+
+    <Router> {/*Rutas que podemos visitar */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/email-password" element={<EmailPassword />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        {/* Ruta para la página de inicio */}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Router>
+
   );
 }
 
