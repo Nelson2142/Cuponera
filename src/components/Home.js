@@ -1,76 +1,82 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Oferts from './Oferts';
+import ComprarCupon from './ComprarCupon';
+import MisCupones from './MisCupones';
 import useOferts from "../hooks/useOferts";
-import { useEffect } from 'react';
 
 const Home = ({ logout, user, isVerified, login }) => {
-    const { oferts, getOferts } = useOferts(); // Hook para obtener ofertas
+    const { oferts, getOferts } = useOferts();
+    const [vista, setVista] = useState("inicio");
+    const [cuponSeleccionado, setCuponSeleccionado] = useState(null);
+
+    // 🚨 USUARIO DE PRUEBA TEMPORAL
+    const usuarioTemporal = {
+        id: 1,
+        nombre: "Usuario Prueba",
+        email: "nelsonrt04@gmail.com"
+    };
+
+    const usuarioActivo = user || usuarioTemporal; // 💡 usamos esto para mostrar el botón siempre
 
     useEffect(() => {
-        getOferts(); // Llama a la función para obtener ofertas al cargar el componente
-    }, []) // Llama a la función para obtener ofertas al cargar el componente
+        getOferts();
+    }, []);
 
     return (
         <>
             <nav className="navbar navbar-dark bg-dark fixed-top">
                 <div className="container-fluid">
                     <a className="navbar-brand" href="#">La cuponera || Don Bosco</a>
-                    {
-                        user && isVerified ? ( //verificar si el usuario esta logeado y verificado
-                            <>
-                                <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
-                                    <span className="navbar-toggler-icon"></span>
-                                </button>
-                                <div className="offcanvas offcanvas-end text-bg-dark" tabIndex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
-                                    <div className="offcanvas-header">
-                                        <h5 className="offcanvas-title" id="offcanvasDarkNavbarLabel">Dark offcanvas</h5>
-                                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                                    </div>
-                                    <div className="offcanvas-body">
-                                        <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                                            <li className="nav-item">
-                                                <a className="nav-link active" aria-current="page" href="#">Home</a>
-                                            </li>
-                                            <li className="nav-item">
-                                                <a className="nav-link" href="#">Link</a>
-                                            </li>
-                                            <li className="nav-item dropdown">
-                                                <a className="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Dropdown
-                                                </a>
-                                                <ul className="dropdown-menu dropdown-menu-dark">
-                                                    <li><a className="dropdown-item" href="#">Action</a></li>
-                                                    <li><a className="dropdown-item" href="#">Another action</a></li>
-                                                    <li>
-                                                        <hr className="dropdown-divider" />
-                                                    </li>
-                                                    <li><a className="dropdown-item" href="#">Something else here</a></li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                        <form className="d-flex mt-3" role="search">
-                                            <input className="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-                                            <button className="btn btn-success" type="submit">Search</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </>
-                        ) : ( //si el usuario no esta logeado o no verificado
-                            <>
-                                <div className="d-flex gap-2">
-                                    <button type="button" className="btn btn-success"><i className="bi bi-box-arrow-in-right"></i> Iniciar sesión</button>
-                                    <button type="button" className="btn btn-warning"><i className="bi bi-pencil-square"></i> Regístrate</button>
-                                </div>
 
-                            </>
-                        )
-                    }
+                    <div className="d-flex gap-2">
+                        <button
+                            className="btn btn-outline-info"
+                            onClick={() => setVista("mis_cupones")}
+                        >
+                            Mis cupones
+                        </button>
+
+                        {
+                            user && isVerified ? (
+                                <>
+                                    <span className="text-white">Hola, {user.nombre}</span>
+                                    <button onClick={logout} className="btn btn-danger">
+                                        Cerrar sesión
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button className="btn btn-success">Iniciar sesión</button>
+                                    <button className="btn btn-warning">Regístrate</button>
+                                </>
+                            )
+                        }
+                    </div>
                 </div>
             </nav>
-            <Oferts oferts = {oferts}/> {/* Componente de Ofertas */}
-        </>
 
+            {
+                vista === "inicio" ? (
+                    <Oferts
+                        oferts={oferts}
+                        setVista={setVista}
+                        setCuponSeleccionado={setCuponSeleccionado}
+                    />
+                ) : vista === "comprar" ? (
+                    <ComprarCupon
+                        cupon={cuponSeleccionado}
+                        setVista={setVista}
+                        user={usuarioActivo} // 💡 usamos temporal si no hay login
+                    />
+                ) : vista === "mis_cupones" ? (
+                    <MisCupones
+                        user={usuarioActivo}
+                        setVista={setVista}
+                    />
+                ) : null
+            }
+        </>
     );
-}
+};
 
 export default Home;
