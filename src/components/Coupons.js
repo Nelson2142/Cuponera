@@ -97,7 +97,7 @@ const Coupons = () => {
                                             </p>
                                             <p className="text-muted small">
                                                 <i className="bi bi-calendar-event me-1"></i> Válido hasta:
-                                                <span style={{ color: 'red' }}><b>{coupon.oferta.fecha_limite_cupon}</b></span>
+                                                <span style={{ color: 'red' }}><b> {coupon.oferta.fecha_limite_cupon}</b></span>
                                             </p>
                                         </div>
                                     </div>

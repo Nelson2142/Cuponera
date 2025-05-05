@@ -122,7 +122,7 @@ const Home = () => {
                         <Coupons />
                     </TabPanel>
                     <TabPanel>
-                        <Oferts oferts={oferts} user={user} isVerified={isVerified} />
+                        <Oferts oferts={oferts} user={user} isVerified={isVerified} getOferts={getOferts}/>
                     </TabPanel>
                 </div>
             </Tabs>

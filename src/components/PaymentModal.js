@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 
-const PaymentModal = ({ show, onClose, onSubmit, isProcessing, ofert }) => {
+const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, getOferts }) => {
     const [cardNumber, setCardNumber] = useState("");
     const [expiryDate, setExpiryDate] = useState("");
     const [cvc, setCvc] = useState("");
     const [cardName, setCardName] = useState("");
     const [error, setError] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const formatCardNumber = (value) => {
         const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
@@ -36,20 +37,52 @@ const PaymentModal = ({ show, onClose, onSubmit, isProcessing, ofert }) => {
         setExpiryDate(value);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsProcessing(true);
         if (!cardNumber || !expiryDate || !cvc || !cardName) {
             setError("Por favor, ingrese la información solicitada");
             return;
         }
         setError(null);
-        onSubmit({
-            cardNumber,
-            expiryDate,
-            cvc,
-            cardName
-        });
+        try {
+
+            const purchaseData = {
+                oferta_id: ofert.id,
+                cliente_id: user.id,
+                paymentMethod: "credit_card",
+                cardDetails: {
+                    number: cardNumber.replace(/\s/g, ""),
+                    expMonth: expiryDate.split("/")[0],
+                    expYear: expiryDate.split("/")[1],
+                    cvc: cvc
+                }
+            };
+
+            const response = await buyCoupons(purchaseData);
+
+            if (response.success && response.message) {
+                alert("¡Compra exitosa! se te ha enviado la información de la compra a tu correo eletrónico.");
+                onClose()
+                ClearForm()
+                setseeOfert()
+                getOferts()
+            } else {
+                throw new Error("La compra no pudo ser procesada correctamente");
+            }
+        } catch (error) {
+            alert(`Error en la compra: ${error.message}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
+
+    const ClearForm = () => {
+        setCardName('');
+        setExpiryDate('')
+        setCvc('')
+        setCardNumber('')
+    }
 
     return (
         <div className={`modal fade ${show ? 'show d-block' : ''}`} tabIndex="-1" style={{ backgroundColor: show ? 'rgba(0,0,0,0.5)' : 'none' }}>
@@ -57,7 +90,10 @@ const PaymentModal = ({ show, onClose, onSubmit, isProcessing, ofert }) => {
                 <div className="modal-content">
                     <div className="modal-header">
                         <h5 className="modal-title"><i className="bi bi-bag"></i> Comprar cupón</h5>
-                        <button type="button" className="btn-close" onClick={onClose}></button>
+                        <button type="button" className="btn-close" onClick={() => {
+                            ClearForm()
+                            onClose()
+                        }}></button>
                     </div>
                     <div className="modal-body">
                         {ofert && (
