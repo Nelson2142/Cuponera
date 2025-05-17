@@ -19,7 +19,8 @@ const useBuy = () => {
 
             const requestData = {
                 oferta_id: purchaseData.oferta_id,
-                cliente_id: purchaseData.cliente_id
+                cliente_id: purchaseData.cliente_id,
+                cantidad: purchaseData.cantidad
             }
 
             const response = await fetch(url, {

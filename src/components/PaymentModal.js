@@ -5,6 +5,7 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
     const [expiryDate, setExpiryDate] = useState("");
     const [cvc, setCvc] = useState("");
     const [cardName, setCardName] = useState("");
+    const [cantidad, setCantidad] = useState("");
     const [error, setError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -40,8 +41,9 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsProcessing(true);
-        if (!cardNumber || !expiryDate || !cvc || !cardName) {
+        if (!cardNumber || !expiryDate || !cvc || !cardName || !cantidad) {
             setError("Por favor, ingrese la información solicitada");
+            setIsProcessing(false)
             return;
         }
         setError(null);
@@ -50,6 +52,7 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
             const purchaseData = {
                 oferta_id: ofert.id,
                 cliente_id: user.id,
+                cantidad: cantidad,
                 paymentMethod: "credit_card",
                 cardDetails: {
                     number: cardNumber.replace(/\s/g, ""),
@@ -81,6 +84,7 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
         setCardName('');
         setExpiryDate('')
         setCvc('')
+        setCantidad('');
         setCardNumber('')
     }
 
@@ -92,6 +96,7 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
                         <h5 className="modal-title"><i className="bi bi-bag"></i> Comprar cupón</h5>
                         <button type="button" className="btn-close" onClick={() => {
                             ClearForm()
+                            setError(null)
                             onClose()
                         }}></button>
                     </div>
@@ -122,6 +127,19 @@ const PaymentModal = ({ show, onClose, buyCoupons, user, setseeOfert, ofert, get
                                     value={cardName}
                                     disabled={isProcessing}
                                     onChange={(e) => setCardName(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="mb-3">
+                                <label htmlFor="cantidad" className="form-label"><i className="bi bi-bag"></i> Cantidad a comprar</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="cantidad"
+                                    placeholder="Ingrese la cantidad que desea comprar"
+                                    value={cantidad}
+                                    disabled={isProcessing}
+                                    onChange={(e) => setCantidad(e.target.value)}
                                 />
                             </div>
 
